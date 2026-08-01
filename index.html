@@ -182,6 +182,9 @@
     .example-table tr.final-row td::before{content:"" !important}
     .example-table tr.final-row td:nth-child(1){color:#fff;font-weight:900;font-size:13.5px}
     .example-table tr.final-row td:nth-child(2){font-size:16px;font-weight:900;white-space:nowrap}
+    #chartPieWrap{flex-direction:column}
+    #chartPieWrap>div{min-width:100%}
+    #chartTrend,#chartPie,#chartBar{height:220px}
   }
   @media (max-width:380px){
     .top-title{font-size:14px}
@@ -202,6 +205,7 @@
     .topbar{display:none !important}
     #view-calc{display:none !important}
     #view-bill{display:block !important}
+    #view-chart{display:none !important}
     .toolbar{display:none !important}
     .wrap{max-width:100%;padding:0}
     .sheet{box-shadow:none;border-radius:0;padding:2mm 0}
@@ -223,6 +227,7 @@
   <div class="tabs">
     <button class="tab active" id="tab-calc" onclick="showView('calc')">📊 详细速算表</button>
     <button class="tab" id="tab-bill" onclick="showView('bill')">🧾 对账结算单</button>
+    <button class="tab" id="tab-chart" onclick="showView('chart')">📊 经营分析</button>
   </div>
 </header>
 
@@ -266,7 +271,7 @@
         <div class="cfg-row"><input id="cfgFx" type="number" value="1.95" step="0.01" oninput="syncCfg('cfgFx','fx');calc()"></div>
       </div>
     </div>
-    <div style="margin-top:10px;font-size:12.5px;color:#0f766e;font-weight:700">💾 参数与已填数字<b>自动保存在本浏览器</b>，下次打开自动恢复；换设备请先下载文件。</div>
+    <div style="margin-top:10px;font-size:12.5px;color:#0f766e;font-weight:700">💾 参数与已填数字<b>自动保存在本浏览器</b>，下次打开自动恢复；换设备登录请先导出数据/打包HTML，再到新设备导入。</div>
     <div style="margin-top:8px"><button class="add-role" onclick="resetAll()">↺ 恢复默认设置（清空本机保存）</button></div>
   </details>
 
@@ -379,6 +384,25 @@
   </div>
 
   <div class="card">
+    <h3>📁 月度存档（每次保存自动记录日期，可随时载入回看）</h3>
+    <div class="cfg-row" style="margin-bottom:8px">
+      月份 <input id="histMonth" type="month" value="2026-06" style="width:130px">
+      <button class="add-role" onclick="saveHistory()">💾 保存本月</button>
+      <button class="add-role" style="background:#7c3aed" onclick="fillPrevMonth()">🤖 自动带入上月 A</button>
+    </div>
+    <div class="hint" style="margin-bottom:8px">「保存本月」= 存下当前所有数字+结算结果+参数，同月再存=覆盖更新；「自动带入上月 A」= 把上个月存档的报送审批金额自动填到 F 卡片的「上期结算款」，风险金自动重算。</div>
+    <div class="cfg-row" style="margin-bottom:10px">
+      <button class="add-role" style="background:#2563eb" onclick="exportData()">📤 导出数据（JSON）</button>
+      <button class="add-role" style="background:#059669" onclick="document.getElementById('importFile').click()">📥 导入数据</button>
+      <button class="add-role" style="background:#ea580c" onclick="embedDataToHTML()">📦 打包HTML（数据内置）</button>
+      <button class="add-role" style="background:#64748b" onclick="loadEmbedded(true)">↩ 载入HTML内置数据</button>
+      <input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importData(this)">
+    </div>
+    <div class="hint" style="margin-bottom:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:8px 10px">💡 <b>换设备登录 / 多端共享</b>：数据存在本浏览器。换设备登录或给文员查看：用「📦打包HTML」或「📤导出JSON」保存成文件 → 传到<b>公司企业微信云盘</b> → 对方打开后「📥导入」或直接打开打包文件（自动载入）。改完再打包/导出传回，即可接力更新。</div>
+    <div id="histList"></div>
+  </div>
+
+  <div class="card">
     <h3>✅ 每月核对流程</h3>
     <div class="flow">
       <div class="flow-step">1️⃣ 施工班组组长月底报：A / B1 / B2… / C / D1 / D3 / D2 / E / M / 上期A</div>
@@ -451,9 +475,47 @@
 
 </section>
 
+<!-- ============ 视图3：经营分析 ============ -->
+<section class="view" id="view-chart">
+
+  <div class="toolbar">
+    <button class="btn" onclick="buildCharts()">🔄 刷新图表</button>
+    <button class="btn" style="background:#64748b" onclick="showView('calc')">← 返回速算表</button>
+    <span class="hint">基于「月度存档」数据自动生成（需先保存 2 个月以上）</span>
+  </div>
+
+  <div class="card">
+    <h3>📊 经营分析看板（基于月度存档）</h3>
+    <div id="chartEmpty" class="hint" style="padding:20px;text-align:center;font-size:13px">
+      📭 还没有足够的月度存档数据。<br>请先在「📊 详细速算表」→「📁 月度存档」保存至少 2 个月的数据，再回来这里查看图表。<br><br>
+      <button class="btn" onclick="showView('calc')">← 去保存数据</button>
+    </div>
+    <div id="chartBody" style="display:none">
+      <div class="legend" style="margin-bottom:10px">
+        <span class="lg"><b style="color:#059669">💰 本期实际结算款</b> 趋势</span>
+        <span class="lg"><b style="color:#e11d48">🧾 运营费用</b> 趋势</span>
+        <span class="lg"><b style="color:#2563eb">📈 产值（A）</b> 趋势</span>
+      </div>
+      <div id="chartTrend" style="width:100%;height:280px"></div>
+      <div id="chartPieWrap" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px">
+        <div style="flex:1;min-width:240px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">💰 本月结算款构成</div><div id="chartPie" style="width:100%;height:240px"></div></div>
+        <div style="flex:1;min-width:240px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">📊 月份对比（按月）</div><div id="chartBar" style="width:100%;height:240px"></div></div>
+      </div>
+      <div id="chartQ" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📋 月度经营明细（存档数据）</h3>
+    <div id="chartTableWrap"></div>
+  </div>
+
+</section>
+
 </div>
 
 <script>
+var CFG_URL='';try{CFG_URL=new URLSearchParams(location.search).get('v')||''}catch(e){}
 var ROLES=[{name:'普通工',rate:120},{name:'技术工',rate:200}];
 var pWarr=10,pRisk=20,pMgmt=15,fx=1.95;
 var D1rate=10,D3rate=20,D2rate=20,Wrate=90,Orate=410,Mname='管理人员费用分摊';
@@ -647,14 +709,396 @@ function renderBillInput(){
 function showView(v){
   document.getElementById('view-calc').className='view'+(v==='calc'?' active':'');
   document.getElementById('view-bill').className='view'+(v==='bill'?' active':'');
+  document.getElementById('view-chart').className='view'+(v==='chart'?' active':'');
   document.getElementById('tab-calc').className='tab'+(v==='calc'?' active':'');
   document.getElementById('tab-bill').className='tab'+(v==='bill'?' active':'');
+  document.getElementById('tab-chart').className='tab'+(v==='chart'?' active':'');
   if(v==='bill')setTimeout(function(){calc();renderBillInput()},0);
+  if(v==='chart')setTimeout(buildCharts,50);
+}
+/* ===== 经营分析 ===== */
+function fmtShort(n){if(Math.abs(n)>=10000)return (n/10000).toFixed(1)+'w';return Math.round(n).toLocaleString('en-US')}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function analyzeData(){
+  var hist=getHistory();
+  var rows=hist.map(function(h){
+    var ins=h.inputs||{};
+    var A=parseFloat(ins.A)||0;
+    var roleSum=0;
+    var names=[];
+    for(var i=0;i<(h.ROLES||[]).length;i++){var bv=parseFloat(ins['B'+(i+1)])||0;roleSum+=bv*h.ROLES[i].rate;names.push(h.ROLES[i].name)}
+    var C=parseFloat(ins.C)||0,D1=parseFloat(ins.D1)||0,D3=parseFloat(ins.D3)||0,D2=parseFloat(ins.D2)||0,E=parseFloat(ins.E)||0,M=parseFloat(ins.M)||0;
+    var W=h.Wrate||90,O=h.Orate||410;
+    var op=roleSum+C*(W+O)+D1*(h.D1rate||10)+D3*(h.D3rate||20)+D2*(h.D2rate||20)+E+M;
+    var p1=100-(h.pWarr||10),p2=100-(h.pRisk||20),p3=100-(h.pMgmt||15);
+    var v2=A*p1/100,v3=v2*p2/100,v4=v3*p3/100;
+    var Fp=parseFloat(ins.Fprev)||0,Fv=Fp*p1/100*(h.pRisk||20)/100,v14=Fv*p3/100;
+    var final=v4-op+v14;
+    var fxv=h.fx||1.95;
+    return {h:h,month:h.month,A:A,roleSum:roleSum,op:op,final:final,v4:v4,v14:v14,cny:final*fxv,fx:fxv,names:names};
+  });
+  rows.sort(function(a,b){return a.month<b.month?-1:1});
+  return rows;
+}
+function svgEl(tag,attr){
+  var ns='http://www.w3.org/2000/svg';
+  var el=document.createElementNS(ns,tag);
+  for(var k in attr)el.setAttribute(k,attr[k]);
+  return el;
+}
+function drawBar(elId,rows,getVal,color,label){
+  var box=document.getElementById(elId);if(!box)return;
+  var w=box.clientWidth||320,h=box.clientHeight||240;
+  var padL=46,padR=8,padT=10,padB=28;
+  box.innerHTML='';
+  if(!rows.length)return;
+  var svg=svgEl('svg',{width:'100%',height:h,viewBox:'0 0 '+w+' '+h});
+  var max=1;
+  for(var i=0;i<rows.length;i++){var v=Math.abs(getVal(rows[i]));if(v>max)max=v}
+  var chartW=w-padL-padR,chartH=h-padT-padB;
+  var n=rows.length,bw=Math.min(46,chartW/n*0.56),gap=chartW/n;
+  for(var gi=0;gi<=4;gi++){
+    var yv=max*(4-gi)/4, y=padT+chartH*(gi/4);
+    svg.appendChild(svgEl('line',{x1:padL,y1:y,x2:w-padR,y2:y,stroke:'#e2e8f0','stroke-width':1}));
+    var t=svgEl('text',{x:padL-5,y:y+4,'text-anchor':'end','font-size':10,fill:'#94a3b8'});
+    t.textContent=fmtShort(yv);
+    svg.appendChild(t);
+  }
+  for(var bi=0;bi<n;bi++){
+    var v=getVal(rows[bi]);
+    var x=padL+gap*bi+(gap-bw)/2;
+    var bh=Math.max(1,chartH*Math.abs(v)/max);
+    var y=padT+chartH-bh;
+    var rect=svgEl('rect',{x:x,y:y,width:bw,height:bh,fill:color,rx:4});
+    if(v<0)rect.setAttribute('fill','#dc2626');
+    svg.appendChild(rect);
+    var lv=svgEl('text',{x:padL+gap*bi+gap/2,y:padT+chartH+14,'text-anchor':'middle','font-size':9.5,fill:'#475569'});
+    lv.textContent=fmtMonth(rows[bi].month).replace('年','/').replace('月','');
+    svg.appendChild(lv);
+    var vt=svgEl('text',{x:padL+gap*bi+gap/2,y:y-5,'text-anchor':'middle','font-size':10,fill:color,'font-weight':800});
+    vt.textContent=fmtShort(v);
+    svg.appendChild(vt);
+  }
+  var tl=svgEl('text',{x:w-8,y:padT-3,'text-anchor':'end','font-size':10.5,fill:'#334155','font-weight':800});
+  tl.textContent=label;
+  svg.appendChild(tl);
+  box.appendChild(svg);
+}
+function drawLine(elId,rows,getVal,color,label){
+  var box=document.getElementById(elId);if(!box)return;
+  var w=box.clientWidth||320,h=box.clientHeight||240;
+  var padL=46,padR=14,padT=14,padB=28;
+  box.innerHTML='';
+  if(!rows.length)return;
+  var svg=svgEl('svg',{width:'100%',height:h,viewBox:'0 0 '+w+' '+h});
+  var vals=rows.map(getVal);
+  var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
+  if(min>0)min=0;
+  var span=max-min||1;
+  var chartW=w-padL-padR,chartH=h-padT-padB;
+  for(var gi=0;gi<=4;gi++){
+    var yv=min+span*(4-gi)/4,y=padT+chartH*(gi/4);
+    svg.appendChild(svgEl('line',{x1:padL,y1:y,x2:w-padR,y2:y,stroke:'#e2e8f0','stroke-width':1}));
+    var t=svgEl('text',{x:padL-5,y:y+4,'text-anchor':'end','font-size':10,fill:'#94a3b8'});
+    t.textContent=fmtShort(yv);
+    svg.appendChild(t);
+  }
+  var pts=[];
+  for(var i=0;i<n;i++){
+    var x=padL+chartW*i/(n-1||1);
+    var y=padT+chartH*(1-(vals[i]-min)/span);
+    pts.push([x,y]);
+    var c=svgEl('circle',{cx:x,cy:y,r:4,fill:color,stroke:'#fff','stroke-width':2});
+    svg.appendChild(c);
+    var t2=svgEl('text',{x:x,y:padT+chartH+14,'text-anchor':'middle','font-size':9.5,fill:'#475569'});
+    t2.textContent=fmtMonth(rows[i].month).replace('年','/').replace('月','');
+    svg.appendChild(t2);
+    var vt=svgEl('text',{x:x,y:y-9,'text-anchor':'middle','font-size':9.5,fill:color,'font-weight':800});
+    vt.textContent=fmtShort(vals[i]);
+    svg.appendChild(vt);
+  }
+  for(var pi=1;pi<pts.length;pi++){
+    svg.appendChild(svgEl('line',{x1:pts[pi-1][0],y1:pts[pi-1][1],x2:pts[pi][0],y2:pts[pi][1],stroke:color,'stroke-width':2.5}));
+  }
+  var tl=svgEl('text',{x:w-8,y:padT-3,'text-anchor':'end','font-size':10.5,fill:'#334155','font-weight':800});
+  tl.textContent=label;
+  svg.appendChild(tl);
+  box.appendChild(svg);
+}
+function drawPie(elId,rows,getVal,colors,label){
+  var box=document.getElementById(elId);if(!box)return;
+  var w=box.clientWidth||240,h=box.clientHeight||240;
+  box.innerHTML='';
+  if(!rows.length)return;
+  var svg=svgEl('svg',{width:'100%',height:h,viewBox:'0 0 '+w+' '+h});
+  var total=0;
+  for(var i=0;i<rows.length;i++){var v=getVal(rows[i]);if(v>0)total+=v}
+  if(!total){var t0=svgEl('text',{x:w/2,y:h/2,'text-anchor':'middle','font-size':12,fill:'#94a3b8'});t0.textContent='暂无正数数据';svg.appendChild(t0);box.appendChild(svg);return}
+  var cx=w/2,cy=h/2,r=Math.min(w,h)/2-36;
+  var start=-Math.PI/2;
+  for(var i=0;i<rows.length;i++){
+    var v=getVal(rows[i]);if(v<=0)continue;
+    var frac=v/total,ang=frac*2*Math.PI;
+    var x1=cx+r*Math.cos(start),y1=cy+r*Math.sin(start);
+    var x2=cx+r*Math.cos(start+ang),y2=cy+r*Math.sin(start+ang);
+    var large=frac>0.5?1:0;
+    var path='M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2+' Z';
+    svg.appendChild(svgEl('path',{d:path,fill:colors[i%colors.length],stroke:'#fff','stroke-width':2}));
+    var mid=start+ang/2;
+    var lx=cx+r*0.62*Math.cos(mid),ly=cy+r*0.62*Math.sin(mid);
+    var pt=svgEl('text',{x:lx,y:ly+3,'text-anchor':'middle','font-size':10,fill:'#fff','font-weight':800});
+    pt.textContent=Math.round(frac*100)+'%';
+    svg.appendChild(pt);
+    start+=ang;
+  }
+  var cyc=svgEl('circle',{cx:cx,cy:cy,r:r*0.5,fill:'#fff'});
+  svg.appendChild(cyc);
+  var ct=svgEl('text',{x:cx,y:cy-2,'text-anchor':'middle','font-size':11,fill:'#334155','font-weight':800});
+  ct.textContent=label||'';
+  svg.appendChild(ct);
+  var ctot=svgEl('text',{x:cx,y:cy+14,'text-anchor':'middle','font-size':11,fill:'#059669','font-weight':800});
+  ctot.textContent=fmtShort(total);
+  svg.appendChild(ctot);
+  box.appendChild(svg);
+  var lg=document.createElement('div');
+  lg.style.cssText='display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;margin-top:4px;font-size:11.5px';
+  for(var li=0;li<rows.length;li++){
+    var v=getVal(rows[li]);if(v<=0)continue;
+    var it=document.createElement('span');
+    it.innerHTML='<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+colors[li%colors.length]+';margin-right:4px"></span>'+fmtMonth(rows[li].month)+' '+fmtShort(v);
+    lg.appendChild(it);
+  }
+  box.parentNode.insertBefore(lg,box.nextSibling);
+}
+function buildCharts(){
+  var rows=analyzeData();
+  var empty=document.getElementById('chartEmpty'),body=document.getElementById('chartBody');
+  if(rows.length<2){if(empty)empty.style.display='block';if(body)body.style.display='none';return}
+  if(empty)empty.style.display='none';
+  if(body)body.style.display='block';
+  var colors=['#059669','#e11d48','#2563eb','#d97706','#7c3aed','#0d9488','#db2777'];
+  drawLine('chartTrend',rows,function(r){return r.final},'#059669','💰 实际结算款');
+  drawBar('chartBar',rows,function(r){return r.final},'#059669','💰 实际结算款');
+  drawPie('chartPie',rows,function(r){return r.final},colors,'本月结算款');
+  var tableWrap=document.getElementById('chartTableWrap');
+  if(tableWrap){
+    var t='<table><tr><th>月份</th><th>报送金额A</th><th>用工代垫</th><th>运营费用合计</th><th>上期返还</th><th>实际结算款</th><th>≈人民币</th></tr>';
+    var sums={A:0,op:0,final:0,role:0};
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i];
+      sums.A+=r.A;sums.op+=r.op;sums.final+=r.final;sums.role+=r.roleSum;
+      t+='<tr><td><b>'+fmtMonth(r.month)+'</b></td><td class="calc-amt">'+fmt(r.A)+'</td><td class="calc-amt">'+fmt(r.roleSum)+'</td><td class="calc-amt">'+fmt(r.op)+'</td><td class="calc-amt">'+fmt(r.v14)+'</td><td class="calc-amt" style="color:#059669;font-weight:800">'+fmt(r.final)+'</td><td class="calc-amt">≈¥'+fmt(r.cny)+'</td></tr>';
+    }
+    t+='<tr style="background:#f0fdf4"><td><b>合计</b></td><td class="calc-amt">'+fmt(sums.A)+'</td><td class="calc-amt">'+fmt(sums.role)+'</td><td class="calc-amt">'+fmt(sums.op)+'</td><td class="calc-amt"></td><td class="calc-amt" style="color:#059669;font-weight:800">'+fmt(sums.final)+'</td><td class="calc-amt">≈¥'+fmt(sums.final*(rows[rows.length-1].fx||1.95))+'</td></tr>';
+    t+='</table>';
+    tableWrap.innerHTML=t;
+  }
+  var q=document.getElementById('chartQ');
+  if(q){
+    var last=rows[rows.length-1],prev=rows[rows.length-2];
+    var qHtml='<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0"><h3>📈 经营数据参考（'+fmtMonth(last.month)+' vs '+fmtMonth(prev.month)+'）</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">';
+    function cmp(name,cur,prv,goodUp,unit){
+      var diff=cur-prv,pct=prv?diff/prv*100:0;
+      var arrow=pct>0?'▲':'▼';
+      var color=(pct>0)==goodUp?'#059669':'#dc2626';
+      return '<div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #e2e8f0"><div style="font-size:11px;color:#64748b">'+name+'</div><div style="font-size:16px;font-weight:800">'+fmt(cur)+(unit||'')+'</div><div style="font-size:11.5px;color:'+color+'">'+arrow+' '+fmt(Math.abs(diff))+(unit||'')+'（'+pct.toFixed(1)+'%）</div></div>';
+    }
+    qHtml+=cmp('💰 实际结算款',last.final,prev.final,true);
+    qHtml+=cmp('📈 报送产值 A',last.A,prev.A,true);
+    qHtml+=cmp('🧾 运营费用',last.op,prev.op,false);
+    qHtml+=cmp('📊 费用率（运营/产值）',last.op/last.A*100,prev.op/prev.A*100,false,'%');
+    qHtml+=cmp('💱 汇率折算',last.cny,prev.cny,true);
+    qHtml+='</div>';
+    var opA1=last.op/last.A*100,opA0=prev.op/prev.A*100;
+    qHtml+='<div style="margin-top:10px;font-size:12.5px;line-height:1.8">';
+    qHtml+='📌 <b>费用率变化</b>：'+fmtMonth(prev.month)+' 运营费用占产值 '+opA0.toFixed(1)+'% → '+fmtMonth(last.month)+' '+opA1.toFixed(1)+'%，'+(opA1>opA0?'<span style="color:#dc2626">上升（费用增长快于产值，需关注成本控制）</span>':'<span style="color:#059669">下降（成本控制良好）</span>')+'<br>';
+    qHtml+='📌 <b>留存率</b>：实际结算款 ÷ 报送产值 = '+(last.A? (last.final/last.A*100).toFixed(1)+'%':'—')+'（'+fmtMonth(last.month)+'）';
+    qHtml+='</div></div>';
+    q.innerHTML=qHtml;
+  }
+}
+/* ===== 月度存档 ===== */
+var HIST_KEY='wento_history_v1';
+function getHistory(){try{var r=localStorage.getItem(HIST_KEY);return r?JSON.parse(r):[]}catch(e){return[]}}
+function putHistory(h){try{localStorage.setItem(HIST_KEY,JSON.stringify(h))}catch(e){alert('保存失败：浏览器存储空间不足')}}
+function fmtMonth(m){if(!m)return'';var p=m.split('-');return p[0]+'年'+parseInt(p[1],10)+'月'}
+function collectInputs(){
+  var ins={};var ids=['A','C','D1','D3','D2','E','M','Fprev'];
+  for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)ins[ids[i]]=el.value}
+  for(var j=0;j<ROLES.length;j++){var el2=document.getElementById('B'+(j+1));if(el2)ins['B'+(j+1)]=el2.value}
+  return ins;
+}
+function saveHistory(){
+  var monthEl=document.getElementById('histMonth');
+  var month=monthEl&&monthEl.value?monthEl.value:new Date().toISOString().slice(0,7);
+  var finalEl=document.getElementById('finalBill');
+  var rec={
+    month:month,
+    savedAt:new Date().toLocaleString('zh-CN',{hour12:false}),
+    ts:Date.now(),
+    inputs:collectInputs(),
+    ROLES:JSON.parse(JSON.stringify(ROLES)),
+    pWarr:pWarr,pRisk:pRisk,pMgmt:pMgmt,fx:fx,
+    D1rate:D1rate,D3rate:D3rate,D2rate:D2rate,Wrate:Wrate,Orate:Orate,Mname:Mname,
+    final:finalEl?finalEl.textContent:''
+  };
+  var hist=getHistory();
+  var idx=-1;
+  for(var i=0;i<hist.length;i++){if(hist[i].month===month){idx=i;break}}
+  if(idx>=0)hist[idx]=rec;else hist.push(rec);
+  hist.sort(function(a,b){return a.month<b.month?-1:1});
+  putHistory(hist);
+  renderHistory();
+  var tip=document.getElementById('histTip');
+  if(tip)tip.textContent='✅ 已保存 '+fmtMonth(month)+'（'+rec.savedAt+'）';
+}
+function loadHistory(month){
+  var hist=getHistory();
+  var rec=null;
+  for(var i=0;i<hist.length;i++){if(hist[i].month===month){rec=hist[i];break}}
+  if(!rec)return;
+  ROLES=JSON.parse(JSON.stringify(rec.ROLES));
+  pWarr=rec.pWarr;pRisk=rec.pRisk;pMgmt=rec.pMgmt;fx=rec.fx;
+  D1rate=rec.D1rate;D3rate=rec.D3rate;D2rate=rec.D2rate;Wrate=rec.Wrate;Orate=rec.Orate;Mname=rec.Mname;
+  renderRoles();
+  restoreInputs(rec);
+  var hm=document.getElementById('histMonth');if(hm)hm.value=month;
+  calc();saveState();renderHistory();
+  var tip=document.getElementById('histTip');
+  if(tip)tip.textContent='📂 已载入 '+fmtMonth(month)+' 的数据';
+}
+function delHistory(month){
+  if(!confirm('确定删除 '+fmtMonth(month)+' 的存档？'))return;
+  var hist=getHistory().filter(function(h){return h.month!==month});
+  putHistory(hist);renderHistory();
+}
+function renderHistory(){
+  var box=document.getElementById('histList');if(!box)return;
+  var hist=getHistory();
+  if(!hist.length){box.innerHTML='<div class="hint">还没有存档。填好当月数字后点「💾 保存本月」。</div>';return}
+  var html='<table><tr><th>月份</th><th>保存时间</th><th>实际结算款</th><th style="width:150px">操作</th></tr>';
+  for(var i=hist.length-1;i>=0;i--){
+    var h=hist[i];
+    html+='<tr><td><b>'+fmtMonth(h.month)+'</b></td><td>'+h.savedAt+'</td><td class="calc-amt" style="color:#059669">'+h.final+' AED</td>'+
+      '<td style="white-space:nowrap"><button class="add-role" onclick="loadHistory(\''+h.month+'\')">载入</button> '+
+      '<button class="role-del" style="width:auto;padding:4px 10px" onclick="delHistory(\''+h.month+'\')">删除</button></td></tr>';
+  }
+  html+='</table>';
+  html+='<div id="histTip" class="note-sm" style="margin-top:8px"></div>';
+  box.innerHTML=html;
+}
+/* ===== 导出 / 导入 / 打包（多端共享） ===== */
+function buildBackup(){
+  return {type:'wento_ledger_backup',ver:1,exportedAt:new Date().toLocaleString('zh-CN',{hour12:false}),
+    state:{ROLES:JSON.parse(JSON.stringify(ROLES)),pWarr:pWarr,pRisk:pRisk,pMgmt:pMgmt,fx:fx,
+      D1rate:D1rate,D3rate:D3rate,D2rate:D2rate,Wrate:Wrate,Orate:Orate,Mname:Mname},
+    inputs:collectInputs(),
+    history:getHistory()};
+}
+function applyBackup(st,label){
+  if(!st)return false;
+  if(st.state){
+    if(Array.isArray(st.state.ROLES)&&st.state.ROLES.length)ROLES=st.state.ROLES;
+    if(typeof st.state.pWarr==='number')pWarr=st.state.pWarr;
+    if(typeof st.state.pRisk==='number')pRisk=st.state.pRisk;
+    if(typeof st.state.pMgmt==='number')pMgmt=st.state.pMgmt;
+    if(typeof st.state.fx==='number')fx=st.state.fx;
+    if(typeof st.state.D1rate==='number')D1rate=st.state.D1rate;
+    if(typeof st.state.D3rate==='number')D3rate=st.state.D3rate;
+    if(typeof st.state.D2rate==='number')D2rate=st.state.D2rate;
+    if(typeof st.state.Wrate==='number')Wrate=st.state.Wrate;
+    if(typeof st.state.Orate==='number')Orate=st.state.Orate;
+    if(typeof st.state.Mname==='string'&&st.state.Mname)Mname=st.state.Mname;
+  }
+  renderRoles();
+  restoreInputs(st);
+  if(Array.isArray(st.history)){putHistory(st.history);renderHistory()}
+  calc();saveState();
+  var tip=document.getElementById('histTip');
+  if(tip)tip.textContent='✅ '+label;
+  return true;
+}
+function exportData(){
+  var st=buildBackup();
+  try{
+    var blob=new Blob([JSON.stringify(st,null,1)],{type:'application/json'});
+    var a=document.createElement('a');
+    var d=new Date(),mm=('0'+(d.getMonth()+1)).slice(-2),dd=('0'+d.getDate()).slice(-2);
+    a.href=URL.createObjectURL(blob);
+    a.download='文拓结算备份_'+d.getFullYear()+mm+dd+'.json';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+  }catch(e){alert('导出失败：'+e.message)}
+}
+function importData(input){
+  var f=input&&input.files&&input.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var st=JSON.parse(reader.result);
+      if(!st||(st.type!=='wento_ledger_backup'&&!st.inputs))throw new Error('文件格式不正确');
+      var ok=applyBackup(st,'导入成功'+(st.exportedAt?('（备份于 '+st.exportedAt+'）'):''));
+      if(ok)alert('✅ 导入成功！当前数据与 '+((st.history||[]).length)+' 个月存档已恢复。');
+    }catch(e){alert('❌ 导入失败：'+e.message)}
+    input.value='';
+  };
+  reader.readAsText(f);
+}
+function embedDataToHTML(){
+  var st=buildBackup();
+  var json=JSON.stringify(st).replace(/<\//g,'<\\/');
+  try{
+    var src=document.documentElement.outerHTML;
+    src=src.replace(/<script id="embedded-data"[\s\S]*?<\/script>/gi,'');
+    src=src.replace('</body>','<script id="embedded-data" type="application/json">'+json+'</'+'script></body>');
+    var blob=new Blob([src],{type:'text/html;charset=utf-8'});
+    var a=document.createElement('a');
+    var d=new Date(),mm=('0'+(d.getMonth()+1)).slice(-2),dd=('0'+d.getDate()).slice(-2);
+    a.href=URL.createObjectURL(blob);
+    a.download='文拓结算系统_含数据_'+d.getFullYear()+mm+dd+'.html';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+  }catch(e){alert('打包失败：'+e.message)}
+}
+function loadEmbedded(force){
+  var emb=document.getElementById('embedded-data');
+  if(!emb){var tip=document.getElementById('histTip');if(tip)tip.textContent='ℹ️ 此文件未内置数据（如需共享数据，先点「📦 打包HTML」）';return}
+  try{
+    var st=JSON.parse(emb.textContent);
+    applyBackup(st,'已载入HTML内置数据'+(st.exportedAt?('（生成于 '+st.exportedAt+'）'):''));
+  }catch(e){var tip=document.getElementById('histTip');if(tip)tip.textContent='❌ 内置数据解析失败'}
+}
+function loadEmbeddedOnce(localSt){
+  var emb=document.getElementById('embedded-data');
+  if(!emb)return;
+  try{
+    var st=JSON.parse(emb.textContent);
+    if(!localSt||!localSt.inputs){applyBackup(st,'首次打开：已自动载入HTML内置数据'+(st.exportedAt?('（生成于 '+st.exportedAt+'）'):''))}
+    else{var tip=document.getElementById('histTip');if(tip)tip.textContent='ℹ️ 此HTML内置数据（生成于 '+(st.exportedAt||'?')+'），本机已有存档，保留本机数据；如需覆盖用「↩ 载入HTML内置数据」'}
+  }catch(e){}
+}
+/* ===== 第2步：自动带入上月 A（风险金自动衔接） ===== */
+function fillPrevMonth(){
+  var monthEl=document.getElementById('histMonth');
+  var m=monthEl&&monthEl.value?monthEl.value:'';
+  var hist=getHistory();
+  var prev=null;
+  for(var i=hist.length-1;i>=0;i--){if(hist[i].month<m){prev=hist[i];break}}
+  var tip=document.getElementById('histTip');
+  if(!prev){if(tip)tip.textContent='⚠️ 找不到比 '+fmtMonth(m)+' 更早的存档，无法自动带入（请先保存上个月的数据）';return}
+  var a=prev.inputs?prev.inputs['A']:'';
+  var av=parseFloat(a);if(isNaN(av))av=0;
+  var fEl=document.getElementById('Fprev');
+  if(fEl){fEl.value=a;calc();saveState()}
+  if(tip)tip.textContent='🤖 已自动带入 '+fmtMonth(prev.month)+' 的报送审批金额 '+fmt(av)+' → 「上期结算款」，风险金 F 已自动重算（A上期='+fmt(av)+'）';
 }
 var _st=loadState();
 renderRoles();
 restoreInputs(_st);
 calc();
+renderHistory();
+loadEmbeddedOnce(_st);
 </script>
 </body>
 </html>
