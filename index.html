@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>文拓机电 · 施工月度结算系统</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}
+  body{background:#eef2f7;color:#1f2937}
+  .topbar{background:#0f766e;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(15,118,110,.35)}
+  .top-title{font-size:17px;font-weight:900;letter-spacing:1px}
+  .top-sub{font-size:11px;opacity:.85;font-weight:400;margin-top:2px}
+  .tabs{display:flex;gap:8px}
+  .tab{border:none;border-radius:9px;padding:9px 18px;font-size:14px;font-weight:800;cursor:pointer;background:rgba(255,255,255,.16);color:#fff}
+  .tab.active{background:#fff;color:#0f766e}
+  .tab:hover{background:rgba(255,255,255,.3)}
+  .wrap{max-width:900px;margin:0 auto;padding:22px 16px 60px}
+  .view{display:none}
+  .view.active{display:block}
+  .card{background:#fff;border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:0 3px 12px rgba(15,40,80,.08)}
+  .card h3{font-size:16px;font-weight:900;color:#0f766e;margin-bottom:12px}
+  .logic-strip{background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:18px;box-shadow:0 3px 12px rgba(15,118,110,.3)}
+  .logic-strip .t1{font-size:15px;font-weight:900;margin-bottom:6px}
+  .logic-strip .t2{font-size:12.5px;line-height:1.8;opacity:.95}
+  .logic-strip .t2 b{color:#fde68a}
+  .num-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+  #rolesCardSlot{display:contents}
+  .num-card{border-radius:14px;padding:14px;color:#fff;position:relative;box-shadow:0 4px 12px rgba(0,0,0,.12);display:flex;flex-direction:column}
+  .num-card .code{font-size:26px;font-weight:900;line-height:1}
+  .num-card .name{font-size:13px;font-weight:800;margin:6px 0 8px;line-height:1.4}
+  .num-card .rate{font-size:11px;opacity:.92;line-height:1.6}
+  .num-card input{width:100%;margin-top:auto;border:none;border-radius:8px;padding:10px 8px;font-size:16px;font-weight:900;text-align:center;outline:none;background:rgba(255,255,255,.95);color:#111;font-family:Consolas,Menlo,monospace}
+  .num-card input::placeholder{color:#94a3b8;font-size:12px;font-weight:700}
+  .num-card.f{background:linear-gradient(135deg,#0d9488,#14b8a6)}
+  .num-card.f .fcalc{font-size:11px;background:rgba(255,255,255,.25);border-radius:7px;padding:4px 6px;margin-top:6px;font-weight:700}
+  .formula-box{background:#f8fafc;border:2px solid #0f766e;border-radius:12px;padding:14px 16px;margin-top:8px}
+  .formula-line{font-size:15px;line-height:2;font-weight:700}
+  .formula-line .step{display:inline-block;background:#0f766e;color:#fff;border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
+  .big{font-size:20px;font-weight:900}
+  .big-f{font-size:22px;font-weight:900;color:#e11d48}
+  .cA{color:#e11d48}.cB{color:#2563eb}.cC{color:#059669}.cD1{color:#7c3aed}.cD2{color:#db2777}.cD3{color:#d97706}.cE{color:#ea580c}.cF{color:#0d9488}.cM{color:#64748b}
+  .note-sm{font-size:11.5px;color:#64748b;margin-top:6px;line-height:1.7}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:12px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 14px}
+  .legend .lg{font-size:12.5px;color:#334155;font-weight:700}
+  .legend .lg b{font-size:15px;margin-right:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#ecfdf5;color:#0f766e;text-align:left;padding:7px 8px;border:1px solid #cbd5e1;font-size:12.5px}
+  td{border:1px solid #cbd5e1;padding:6px 8px;line-height:1.5;word-wrap:break-word;overflow-wrap:break-word;vertical-align:top}
+  .calc-amt{font-family:Consolas,Menlo,monospace;font-weight:800;text-align:right;font-size:13px;white-space:normal;word-break:break-all}
+  .final-row td{background:#052e16;color:#fff}
+  .final-label{font-size:16px;font-weight:900;color:#4ade80;text-align:center}
+  .final-amt{font-size:21px;font-weight:900;color:#4ade80;text-align:center;font-family:Consolas,Menlo,monospace}
+  .result-box{background:linear-gradient(135deg,#052e16,#064e3b);border-radius:12px;color:#fff;padding:16px 18px;margin-top:12px}
+  .result-main{font-size:24px;font-weight:900;color:#4ade80;font-family:Consolas,Menlo,monospace}
+  .result-main.neg{color:#f87171}
+  .result-steps{font-size:12px;color:#d1fae5;line-height:2;margin-top:8px;font-family:Consolas,Menlo,monospace}
+  .result-steps b{color:#fde68a}
+  .warn{color:#fca5a5;font-size:13px;font-weight:700;margin-top:6px}
+  .cny{color:#a5b4fc;font-size:13px;font-weight:700;margin-top:4px}
+  .btn{background:#0f766e;color:#fff;border:none;border-radius:10px;padding:12px 26px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(15,118,110,.3)}
+  .btn:hover{background:#0d9488}
+  .btn.big-btn{font-size:16px;padding:14px 32px;width:100%;border-radius:12px}
+  .btn-orange{background:#ea580c}
+  .btn-orange:hover{background:#f97316}
+  .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .hint{color:#64748b;font-size:13px}
+  .sheet{background:#fff;border-radius:14px;padding:30px 34px;box-shadow:0 4px 18px rgba(15,40,80,.1)}
+  .title{text-align:center;font-size:21px;font-weight:900;color:#0f766e;letter-spacing:2px;margin-bottom:4px}
+  .subtitle{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:14px}
+  .meta{display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #0f766e}
+  .meta b{color:#0f766e}
+  .sec{font-size:14px;font-weight:900;color:#fff;background:#0f766e;border-radius:8px;padding:7px 12px;margin:16px 0 8px}
+  .input-cell input{width:100%;border:1.5px solid #f59e0b;background:#fffdf5;border-radius:6px;padding:5px 6px;font-size:15px;font-weight:800;text-align:center;outline:none;color:#1f2937}
+  .input-cell input:focus{border-color:#0f766e}
+  .check-cell{width:90px}
+  .code-cell{font-weight:900;color:#e11d48;text-align:center;font-size:14px}
+  .sign{display:flex;justify-content:space-between;align-items:flex-end;margin:16px 0 4px;padding:12px 10px;border:1px dashed #94a3b8;border-radius:8px;gap:16px;flex-wrap:wrap}
+  .sign-item{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .line{display:inline-block;width:100px;border-bottom:1.5px solid #1f2937;height:1px;margin:0 4px}
+  .line-short{width:56px}
+  .remark{font-size:12px;color:#475569;line-height:1.9;margin-top:10px;padding-top:8px;border-top:1px dashed #cbd5e1}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .flow-step{background:#ecfdf5;border:1.5px solid #0f766e;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;color:#0f766e;flex:1;min-width:150px}
+  details.cfg{background:#fff;border:2px dashed #94a3b8;border-radius:14px;padding:14px 18px;margin-bottom:18px}
+  summary{font-size:15px;font-weight:900;color:#334155;cursor:pointer;user-select:none}
+  summary:hover{color:#0f766e}
+  .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:12px}
+  .cfg-sec{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px}
+  .cfg-sec .cfg-title{font-size:13px;font-weight:900;color:#0f766e;margin-bottom:8px}
+  .cfg-sec .cfg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:#475569;margin-bottom:6px}
+  .cfg-sec input{width:76px;border:1.5px solid #cbd5e1;border-radius:6px;padding:4px 6px;font-size:14px;font-weight:800;text-align:center;outline:none;color:#1f2937}
+  .cfg-sec input:focus{border-color:#0f766e}
+  .cfg-sec .in-name{width:130px;text-align:left}
+  .cfg table{width:100%;font-size:13px}
+  .cfg table th{background:#e2e8f0;color:#334155;padding:6px;border:1px solid #cbd5e1;text-align:center}
+  .cfg table td{border:1px solid #cbd5e1;padding:5px;text-align:center}
+  .role-del{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;width:26px;height:26px;cursor:pointer;font-weight:900}
+  .add-role{background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;margin-top:8px}
+  .add-role:hover{background:#0d9488}
+  @media print{
+    body{background:#fff}
+    .topbar{display:none !important}
+    #view-calc{display:none !important}
+    #view-bill{display:block !important}
+    .toolbar{display:none !important}
+    .wrap{max-width:100%;padding:0}
+    .sheet{box-shadow:none;border-radius:0;padding:2mm 0}
+    .input-cell input{border:none;border-bottom:1px solid #000;background:transparent;border-radius:0;font-size:14px;padding:2px}
+    th,td{border:1px solid #94a3b8}
+    .sec{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .final-row td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{size:A4;margin:10mm}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <div class="top-title">施工班组 · 月度结算系统</div>
+    <div class="top-sub">文拓机电公司内部施工月度结算系统</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-calc" onclick="showView('calc')">📊 详细速算表</button>
+    <button class="tab" id="tab-bill" onclick="showView('bill')">🧾 对账结算单</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ 视图1：详细速算表 ============ -->
+<section class="view active" id="view-calc">
+
+  <div class="logic-strip">
+    <div class="t1">💰 一句话结算逻辑</div>
+    <div class="t2">干完活 → 总包先扣 <b>10% 质保金</b> → 再扣 <b>20% 风险金</b>（后期返还，返还时再扣15%） → 公司扣 <b>15% 管理费</b> → 再扣 <b>外籍用工、吃饭、水电、运营、罚款、借款</b> 等费用 → 剩余就是本期实发。所有单价均可点击下方「⚙️ 结算参数设置」调整。</div>
+  </div>
+
+  <details class="cfg">
+    <summary>⚙️ 结算参数设置（所有单价、扣款比例、汇率都在这里调，改完立即生效）</summary>
+    <div class="cfg-grid">
+      <div class="cfg-sec">
+        <div class="cfg-title">🛠 外籍用工工种表（可增删改）</div>
+        <table id="roleCfgTable">
+          <tr><th style="width:34%">工种名称</th><th style="width:22%">单价 AED/日</th><th style="width:10%">删除</th></tr>
+        </table>
+        <button class="add-role" onclick="addRole()">＋ 添加工种</button>
+      </div>
+      <div class="cfg-sec">
+        <div class="cfg-title">🍽 餐费单价（AED/人次）</div>
+        <div class="cfg-row">早餐 <input id="cfgD1" type="number" value="10" oninput="syncCfg('cfgD1','rateD1');calc()"></div>
+        <div class="cfg-row">午餐 <input id="cfgD3" type="number" value="20" oninput="syncCfg('cfgD3','rateD3');calc()"></div>
+        <div class="cfg-row">晚餐 <input id="cfgD2" type="number" value="20" oninput="syncCfg('cfgD2','rateD2');calc()"></div>
+        <div class="cfg-title" style="margin-top:10px">🏠 在场费用（AED/天）</div>
+        <div class="cfg-row">住宿水电 <input id="cfgW" type="number" value="90" oninput="syncCfg('cfgW','rateW');calc()"></div>
+        <div class="cfg-row">运营费 <input id="cfgO" type="number" value="410" oninput="syncCfg('cfgO','rateO');calc()"></div>
+      </div>
+      <div class="cfg-sec">
+        <div class="cfg-title">🏢 管理人员费（AED/月）</div>
+        <div class="cfg-row"><input class="in-name" id="cfgMname" type="text" value="管理人员费用分摊" onchange="updMname()"> <input id="cfgM" type="number" value="5000" oninput="syncCfg('cfgM','M');calc()"></div>
+        <div class="cfg-title" style="margin-top:10px">📐 扣款比例（%）</div>
+        <div class="cfg-row">总包质保金 <input id="cfgWarr" type="number" value="10" oninput="syncCfg('cfgWarr','pWarr');calc()"></div>
+        <div class="cfg-row">总包风险金 <input id="cfgRisk" type="number" value="20" oninput="syncCfg('cfgRisk','pRisk');calc()"></div>
+        <div class="cfg-row">公司管理费 <input id="cfgMgmt" type="number" value="15" oninput="syncCfg('cfgMgmt','pMgmt');calc()"></div>
+        <div class="cfg-title" style="margin-top:10px">💱 汇率（1 AED = ? RMB）</div>
+        <div class="cfg-row"><input id="cfgFx" type="number" value="1.95" step="0.01" oninput="syncCfg('cfgFx','fx');calc()"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12.5px;color:#0f766e;font-weight:700">💾 参数与已填数字<b>自动保存在本浏览器</b>，下次打开自动恢复；换设备请先下载文件。</div>
+    <div style="margin-top:8px"><button class="add-role" onclick="resetAll()">↺ 恢复默认设置（清空本机保存）</button></div>
+  </details>
+
+  <div class="card">
+    <h3>🎯 每月只需记录这些数字（彩色大号卡片）</h3>
+    <div class="num-grid">
+      <div class="num-card" style="background:linear-gradient(135deg,#e11d48,#f43f5e)">
+        <div class="code">A</div><div class="name">当月报送审批金额</div>
+        <div class="rate">总包审核通过的量<br>（验收合格、审批通过）</div>
+        <input id="A" type="number" value="100000" oninput="calc()" placeholder="当月审核通过金额">
+      </div>
+      <span id="rolesCardSlot"></span>
+      <div class="num-card" style="background:linear-gradient(135deg,#059669,#10b981)">
+        <div class="code">C</div><div class="name">在场天数<br>（实际当月天数）</div>
+        <div class="rate"><span id="rateW">90</span> + <span id="rateO">410</span><br>= <span id="rateC">500</span> AED / 天</div>
+        <input id="C" type="number" value="30" oninput="calc()" placeholder="在场天数">
+      </div>
+      <div class="num-card" style="background:linear-gradient(135deg,#7c3aed,#8b5cf6)">
+        <div class="code">D1</div><div class="name">早餐人次</div>
+        <div class="rate"><span id="rateD1">10</span> AED / 人次</div>
+        <input id="D1" type="number" value="50" oninput="calc()" placeholder="早餐人次">
+      </div>
+      <div class="num-card" style="background:linear-gradient(135deg,#d97706,#f59e0b)">
+        <div class="code">D3</div><div class="name">午餐人次</div>
+        <div class="rate"><span id="rateD3">20</span> AED / 人次</div>
+        <input id="D3" type="number" value="50" oninput="calc()" placeholder="午餐人次">
+      </div>
+      <div class="num-card" style="background:linear-gradient(135deg,#db2777,#ec4899)">
+        <div class="code">D2</div><div class="name">晚餐人次</div>
+        <div class="rate"><span id="rateD2">20</span> AED / 人次</div>
+        <input id="D2" type="number" value="50" oninput="calc()" placeholder="晚餐人次">
+      </div>
+      <div class="num-card" style="background:linear-gradient(135deg,#ea580c,#f97316)">
+        <div class="code">E</div><div class="name">罚款 + 借款代垫</div>
+        <div class="rate">按实际发生，有才扣</div>
+        <input id="E" type="number" value="1250" oninput="calc()" placeholder="罚款+借款">
+      </div>
+      <div class="num-card" style="background:linear-gradient(135deg,#64748b,#94a3b8)">
+        <div class="code">M</div><div class="name">管理人员费<br>（每月）</div>
+        <div class="rate">默认 5,000 AED / 月<br>可按实际调整</div>
+        <input id="M" type="number" value="5000" oninput="calc()" placeholder="管理人员费/月">
+      </div>
+      <div class="num-card f">
+        <div class="code">F</div><div class="name">结算循环风险金</div>
+        <div class="rate">F = A<sub>上期</sub> × 90% × 20%<br>A<sub>上期</sub> = 上期结算款<br>（上期总包扣的风险金）<br><span class="fcalc" id="fValShow">上期风险金 F = 18,000 AED</span></div>
+        <input id="Fprev" type="number" value="100000" oninput="calc()" placeholder="上期结算款">
+      </div>
+    </div>
+    <div class="note-sm">* 外籍用工按工种分别填报工日（人数×天数），在「⚙️ 参数设置」中可增减工种、改单价；上期结算款（A<sub>上期</sub>）填在 F 卡片输入框，系统自动算出风险金 F；管理人员费 M 默认 5,000 AED/月，可按实际修改。</div>
+  </div>
+
+  <div class="card">
+    <h3>📋 运营费用单价速查表（每笔钱为什么产生）</h3>
+    <table>
+      <tr><th>类别</th><th>项目</th><th>单价</th><th>计费方式</th><th>对应代号</th></tr>
+      <tr><td><b>外籍用工</b></td><td>按工种计（普通工/技术工…）</td><td>按工种单价 AED/工日</td><td>按工日，用一天算一天</td><td class="code-cell">B1 / B2 …</td></tr>
+      <tr><td><b>吃饭记录</b></td><td>早餐 / 午餐 / 晚餐</td><td>10 / 20 / 20 AED/人次</td><td>按人次，吃一顿扣一顿</td><td class="code-cell">D1 / D3 / D2</td></tr>
+      <tr><td><b>在场费用</b></td><td>住宿水电 + 运营费</td><td>90 + 410 = 500 AED/天</td><td>按实际当月天数</td><td class="code-cell">C</td></tr>
+      <tr><td><b>管理人员</b></td><td>管理人员费用分摊</td><td>5,000 AED/月（可调）</td><td>按月，默认 5,000，可改</td><td class="code-cell">M</td></tr>
+      <tr><td><b>实际发生</b></td><td>现场罚款 / 借款代垫</td><td>按实际</td><td>有才扣</td><td class="code-cell">E</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>⚡ 速算公式（一步一步看，不跳步）</h3>
+    <div class="legend">
+      <span class="lg"><b class="cA">A</b> = 当月报送审批金额</span>
+      <span class="lg"><b class="cB">B1/B2…</b> = 各工种外籍用工工日</span>
+      <span class="lg"><b class="cC">C</b> = 在场天数（实际当月天数）</span>
+      <span class="lg"><b class="cD1">D1</b> = 早餐人次</span>
+      <span class="lg"><b class="cD3">D3</b> = 午餐人次</span>
+      <span class="lg"><b class="cD2">D2</b> = 晚餐人次</span>
+      <span class="lg"><b class="cE">E</b> = 罚款+借款代垫</span>
+      <span class="lg"><b class="cM">M</b> = 管理人员费/月</span>
+      <span class="lg"><b class="cF">F</b> = 结算循环风险金 = A<sub>上期</sub> × 风险金% × 质保后%</span>
+    </div>
+    <div class="formula-box">
+      <div class="formula-line"><span class="step">第1步</span><span class="big cA">A</span> × <span id="fWarr">90</span>% <span class="note-sm">（总包先扣 <span id="pWarrShow">10</span>% 质保金）</span> → × <span id="fRisk">80</span>% <span class="note-sm">（总包再扣 <span id="pRiskShow">20</span>% 风险金）</span> → × <span id="fMgmt">85</span>% <span class="note-sm">（公司扣 <span id="pMgmtShow">15</span>% 管理费）</span> = <span class="big cA">A</span> × <span id="fComb">61.2</span>% = <b>本月产值到手</b></div>
+      <div class="formula-line"><span class="step">第2步</span><span class="big cB" id="rolesFormula">B1×120 + B2×120</span> + <span class="big cC">C</span>×(<span id="fW">90</span>+<span id="fO">410</span>) <span class="note-sm">（住宿水电 <span id="fW2">90</span> + 运营费 <span id="fO2">410</span>）/天</span> + <span class="big cD1">D1</span>×<span id="fD1">10</span> + <span class="big cD3">D3</span>×<span id="fD3">20</span> + <span class="big cD2">D2</span>×<span id="fD2">20</span> + <span class="big cE">E</span> + <span class="big cM">M</span> = <b>运营费用合计</b></div>
+      <div class="formula-line"><span class="step">第3步</span>A<sub>上期</sub> × <span id="fWarr3">90</span>% × <span id="fRisk2">20</span>% = <span class="big cF">F</span>（结算循环风险金，上期结算款被总包扣的风险金）→ × <span id="fMgmt2">85</span>% <span class="note-sm">（返还时扣 15% 管理费）</span> = <b>上期返还</b></div>
+      <div class="formula-line" style="margin-top:10px;border-top:2px dashed #0f766e;padding-top:10px">💰 <span class="big-f">实际结算款 = 第1步 − 第2步 + 第3步</span></div>
+    </div>
+    <div class="note-sm">组合系数 = 质保后% × 风险后% × 管理费后%（可在参数设置调整）；C×(90+410) = C×500；A<sub>上期</sub> = 上期结算款（上期总包审核通过的报送审批金额）。</div>
+  </div>
+
+  <div class="card">
+    <h3>🧮 举例：本月干 100,000 AED 的活（一目了然）</h3>
+    <table>
+      <tr><th>步骤</th><th>怎么算</th><th>金额（AED）</th></tr>
+      <tr><td>① 当月报送审批金额</td><td class="calc-amt">= A</td><td class="calc-amt">100,000</td></tr>
+      <tr><td>② 总包批复（扣 10% 质保金）</td><td class="calc-amt">= ① × 90%</td><td class="calc-amt">90,000</td></tr>
+      <tr><td>③ 总包当期支付（扣 20% 风险金）</td><td class="calc-amt">= ② × 80%</td><td class="calc-amt">72,000</td></tr>
+      <tr><td>④ 扣 15% 管理费后到手</td><td class="calc-amt">= ③ × 85%</td><td class="calc-amt">61,200</td></tr>
+      <tr><td>⑤ 运营费用合计（B×120+C×(90+410)+D1×10+D3×20+D2×20+E+M）</td><td class="calc-amt">15×120+15×200+30×(90+410)+50×10+50×20+50×20+1250+5000</td><td class="calc-amt">28,550</td></tr>
+      <tr><td>⑥ 上期风险金返还（F×85%，F=A<sub>上期</sub>×90%×20%）</td><td class="calc-amt">= F × 85%</td><td class="calc-amt">15,300</td></tr>
+      <tr class="final-row"><td colspan="2" class="final-label">💰 本期实际结算款</td><td class="final-amt">47,950</td></tr>
+    </table>
+    <div class="note-sm">示例：B1 普通工 15 工日 ×120 = 1,800 + B2 技术工 15 工日 ×200 = 3,000，合计 4,800；上期结算款 A<sub>上期</sub> 取 100,000 → F = 18,000 → 返还 15,300（已扣 15% 管理费）。</div>
+  </div>
+
+  <div class="card">
+    <h3>🚀 实时速算器（填上面的数字，立即出结果）</h3>
+    <div class="result-box">
+      <div style="font-size:13px;opacity:.9">💰 本期实际结算款</div>
+      <div class="result-main" id="qFinal">—</div>
+      <div class="cny" id="qCny">—</div>
+      <div class="warn" id="qWarn" style="display:none">⚠️ 运营费用超过本期到手金额，本期为负，需核查费用或申请预支</div>
+      <div class="result-steps" id="qSteps"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>✅ 每月核对流程</h3>
+    <div class="flow">
+      <div class="flow-step">1️⃣ 施工班组组长月底报：A / B1 / B2… / C / D1 / D3 / D2 / E / M / 上期A</div>
+      <div class="flow-step">2️⃣ 现场管理人员套公式核算，双方逐项核对</div>
+      <div class="flow-step">3️⃣ 生成对账结算单 → 双方签字 → 出本期结算款</div>
+    </div>
+  </div>
+
+  <button class="btn big-btn btn-orange" onclick="showView('bill')">🧾 生成打印对账单 →</button>
+
+</section>
+
+<!-- ============ 视图2：对账结算单 ============ -->
+<section class="view" id="view-bill">
+
+  <div class="toolbar">
+    <button class="btn" onclick="window.print()">🖨 打印对账单</button>
+    <button class="btn" style="background:#64748b" onclick="showView('calc')">← 返回速算表</button>
+    <span class="hint">数字已自动同步速算表，可直接修改 · 填好后点打印</span>
+  </div>
+
+  <div class="sheet">
+    <div class="title">施工班组 · 月度对账结算单</div>
+    <div class="subtitle">文拓机电公司内部施工月度结算系统</div>
+
+    <div class="meta">
+      <span>结算期间：<b>＿＿＿＿年＿＿月</b>（第＿＿期）</span>
+      <span>编号：＿＿＿＿＿＿</span>
+    </div>
+
+    <div class="sec">一、本月核心数字（施工班组填报，现场管理人员核对）</div>
+    <div id="billInputTable"></div>
+
+    <div class="sec">二、结算计算（自动生成）</div>
+    <table>
+      <tr><th style="width:7%">步骤</th><th style="width:42%">项目</th><th style="width:30%">公式</th><th style="width:21%">金额（AED）</th></tr>
+      <tr><td style="text-align:center">①</td><td>A 当月报送审批金额</td><td class="calc-amt">= A</td><td class="calc-amt" id="s1">—</td></tr>
+      <tr><td style="text-align:center">②</td><td>总包批复（扣 10% 质保金，质保期满退，退时再扣15%）</td><td class="calc-amt">= A × 90%</td><td class="calc-amt" id="s2">—</td></tr>
+      <tr><td style="text-align:center">③</td><td>总包当期支付（扣 20% 风险金，后期返还）</td><td class="calc-amt">= ② × 80%</td><td class="calc-amt" id="s3">—</td></tr>
+      <tr><td style="text-align:center">④</td><td>公司扣 15% 管理费后到手</td><td class="calc-amt">= ③ × 85%</td><td class="calc-amt" id="s4">—</td></tr>
+      <tr><td style="text-align:center">⑤</td><td>外籍用工代垫合计（各工种）</td><td class="calc-amt">= Σ Bn×单价</td><td class="calc-amt" id="s5">—</td></tr>
+      <tr><td style="text-align:center">⑥</td><td>在场费用（运营费 + 住宿水电）</td><td class="calc-amt">= C × (90+410)</td><td class="calc-amt" id="s6">—</td></tr>
+      <tr><td style="text-align:center">⑦</td><td>早餐</td><td class="calc-amt">= D1 × 10</td><td class="calc-amt" id="s7">—</td></tr>
+      <tr><td style="text-align:center">⑧</td><td>午餐</td><td class="calc-amt">= D3 × 20</td><td class="calc-amt" id="s8">—</td></tr>
+      <tr><td style="text-align:center">⑨</td><td>晚餐</td><td class="calc-amt">= D2 × 20</td><td class="calc-amt" id="s9">—</td></tr>
+      <tr><td style="text-align:center">⑩</td><td>罚款 + 借款代垫</td><td class="calc-amt">= E</td><td class="calc-amt" id="s10">—</td></tr>
+      <tr><td style="text-align:center">⑪</td><td>管理人员费（M）</td><td class="calc-amt">= M</td><td class="calc-amt" id="s11">—</td></tr>
+      <tr><td style="text-align:center">⑫</td><td>运营费用合计（⑤ ~ ⑪ 相加）</td><td class="calc-amt">= ⑤+⑥+⑦+⑧+⑨+⑩+⑪</td><td class="calc-amt" id="s12">—</td></tr>
+      <tr><td style="text-align:center">⑬</td><td>结算循环风险金 F = A<sub>上期</sub> × 90% × 风险金%</td><td class="calc-amt">= 上期A × 90% × 20%</td><td class="calc-amt" id="s13">—</td></tr>
+      <tr><td style="text-align:center">⑭</td><td>上期风险金返还（返还时扣 15% 管理费）</td><td class="calc-amt">= ⑬ × 85%</td><td class="calc-amt" id="s14">—</td></tr>
+      <tr class="final-row">
+        <td colspan="2" class="final-label">💰 本期实际结算款</td>
+        <td class="calc-amt" style="color:#4ade80">= ④ − ⑫ + ⑭</td>
+        <td class="final-amt" id="finalBill">—</td>
+      </tr>
+    </table>
+    <div id="billCny" class="cny" style="text-align:right;margin-top:6px"></div>
+
+    <div class="sec">三、双方确认签字</div>
+    <div class="sign">
+      <div class="sign-item">现场管理人员（甲方）签字：<span class="line"></span>日期：<span class="line-short"></span></div>
+      <div class="sign-item">施工班组组长（乙方）签字：<span class="line"></span>日期：<span class="line-short"></span></div>
+    </div>
+
+    <div class="remark">
+      备注：1. A = 当月报送审批金额（总包审核通过、验收合格、审批通过的量）；F = 结算循环风险金 = A<sub>上期</sub> × 90% × 风险金%；2. C = 实际当月天数；3. M = 管理人员费/月；4. 外籍用工按工种填报（B1普通工、B2技术工…），单价见参数设置；5. 本单一式两份，双方各执一份。<br>
+      结算规则：总包扣 10% 质保金 + 20% 风险金（后期返还），公司按合同额扣 15% 管理费（当期结算、风险金返还、质保金退还三笔各扣一次）。
+    </div>
+  </div>
+
+</section>
+
+</div>
+
+<script>
+var ROLES=[{name:'普通工',rate:120},{name:'技术工',rate:200}];
+var pWarr=10,pRisk=20,pMgmt=15,fx=1.95;
+var D1rate=10,D3rate=20,D2rate=20,Wrate=90,Orate=410,Mname='管理人员费用分摊';
+var SAVE_KEY='wento_ledger_v1';
+function saveState(){
+  try{
+    var st={v:1,ROLES:ROLES,pWarr:pWarr,pRisk:pRisk,pMgmt:pMgmt,fx:fx,
+      D1rate:D1rate,D3rate:D3rate,D2rate:D2rate,Wrate:Wrate,Orate:Orate,Mname:Mname,inputs:{}};
+    var ids=['A','C','D1','D3','D2','E','M','Fprev'];
+    for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)st.inputs[ids[i]]=el.value}
+    for(var j=0;j<ROLES.length;j++){var el2=document.getElementById('B'+(j+1));if(el2)st.inputs['B'+(j+1)]=el2.value}
+    localStorage.setItem(SAVE_KEY,JSON.stringify(st));
+  }catch(e){}
+}
+function loadState(){
+  var st=null;
+  try{var raw=localStorage.getItem(SAVE_KEY);if(raw)st=JSON.parse(raw)}catch(e){return null}
+  if(!st)return null;
+  if(Array.isArray(st.ROLES)&&st.ROLES.length)ROLES=st.ROLES;
+  if(typeof st.pWarr==='number')pWarr=st.pWarr;
+  if(typeof st.pRisk==='number')pRisk=st.pRisk;
+  if(typeof st.pMgmt==='number')pMgmt=st.pMgmt;
+  if(typeof st.fx==='number')fx=st.fx;
+  if(typeof st.D1rate==='number')D1rate=st.D1rate;
+  if(typeof st.D3rate==='number')D3rate=st.D3rate;
+  if(typeof st.D2rate==='number')D2rate=st.D2rate;
+  if(typeof st.Wrate==='number')Wrate=st.Wrate;
+  if(typeof st.Orate==='number')Orate=st.Orate;
+  if(typeof st.Mname==='string'&&st.Mname)Mname=st.Mname;
+  return st;
+}
+function restoreInputs(st){
+  if(st&&st.inputs){
+    for(var k in st.inputs){var el=document.getElementById(k);if(el)el.value=st.inputs[k]}
+  }
+  function setCfg(id,v){var el=document.getElementById(id);if(el)el.value=v}
+  var elM=document.getElementById('M');
+  setCfg('cfgD1',D1rate);setCfg('cfgD3',D3rate);setCfg('cfgD2',D2rate);
+  setCfg('cfgW',Wrate);setCfg('cfgO',Orate);
+  setCfg('cfgM',elM?elM.value:5000);
+  setCfg('cfgWarr',pWarr);setCfg('cfgRisk',pRisk);setCfg('cfgMgmt',pMgmt);
+  setCfg('cfgFx',fx);setCfg('cfgMname',Mname);
+}
+function updMname(){
+  var el=document.getElementById('cfgMname');if(el)Mname=el.value;
+  saveState();renderBillInput();
+}
+function resetAll(){
+  try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+  location.reload();
+}
+function fmt(n){return Math.round(n).toLocaleString('en-US')}
+function num(id){var el=document.getElementById(id);if(!el)return 0;var v=parseFloat(el.value);return isNaN(v)?0:v}
+function syncCfg(cfgId,targetId){
+  var c=document.getElementById(cfgId);if(!c)return;
+  var v=parseFloat(c.value);if(isNaN(v))v=0;
+  if(targetId==='M'){document.getElementById('M').value=v}
+  else if(targetId==='pWarr'){pWarr=v}
+  else if(targetId==='pRisk'){pRisk=v}
+  else if(targetId==='pMgmt'){pMgmt=v}
+  else if(targetId==='fx'){fx=v}
+  else if(targetId==='rateD1'){D1rate=v;document.getElementById('rateD1').textContent=v}
+  else if(targetId==='rateD3'){D3rate=v;document.getElementById('rateD3').textContent=v}
+  else if(targetId==='rateD2'){D2rate=v;document.getElementById('rateD2').textContent=v}
+  else if(targetId==='rateW'){Wrate=v;document.getElementById('rateW').textContent=v}
+  else if(targetId==='rateO'){Orate=v;document.getElementById('rateO').textContent=v}
+  if(targetId==='rateW'||targetId==='rateO'){document.getElementById('rateC').textContent=Wrate+Orate}
+  calc();
+  renderBillInput();
+  saveState();
+}
+function renderRoles(){
+  var slot=document.getElementById('rolesCardSlot');
+  var html='';
+  for(var i=0;i<ROLES.length;i++){
+    var r=ROLES[i];
+    html+='<div class="num-card" style="background:linear-gradient(135deg,#2563eb,#3b82f6)">'+
+      '<div class="code">B'+(i+1)+'</div><div class="name">'+r.name+'<br>（人数×天数）</div>'+
+      '<div class="rate">'+r.rate+' AED / 工日</div>'+
+      '<input id="B'+(i+1)+'" type="number" value="15" oninput="calc()" placeholder="'+r.name+'工日"></div>';
+  }
+  slot.innerHTML=html;
+  var cfg=document.getElementById('roleCfgTable');
+  var chtml='';
+  for(var i=0;i<ROLES.length;i++){
+    chtml+='<tr><td><input class="in-name" id="roleName'+i+'" type="text" value="'+ROLES[i].name+'" onchange="updRoleName('+i+')"></td>'+
+      '<td><input id="roleRate'+i+'" type="number" value="'+ROLES[i].rate+'" onchange="updRoleRate('+i+')"></td>'+
+      '<td><button class="role-del" onclick="delRole('+i+')">×</button></td></tr>';
+  }
+  cfg.innerHTML='<tr><th style="width:34%">工种名称</th><th style="width:22%">单价 AED/日</th><th style="width:10%">删除</th></tr>'+chtml;
+  calc();
+  renderBillInput();
+}
+function addRole(){
+  ROLES.push({name:'新工种',rate:120});
+  renderRoles();
+}
+function delRole(i){
+  ROLES.splice(i,1);
+  renderRoles();
+}
+function updRoleName(i){
+  var el=document.getElementById('roleName'+i);if(el)ROLES[i].name=el.value;
+  renderRoles();
+}
+function updRoleRate(i){
+  var el=document.getElementById('roleRate'+i);if(el){var v=parseFloat(el.value);if(!isNaN(v))ROLES[i].rate=v}
+  renderRoles();
+}
+function syncBack(id2){
+  for(var k in MAP){if(MAP[k]===id2){var el=document.getElementById(k);if(el)el.value=document.getElementById(id2).value}}
+}
+var MAP={A:'A2',B1:'B12',B2:'B22',C:'C2',D1:'D12',D3:'D32',D2:'D22',E:'E2',M:'M2',Fprev:'F2'};
+function calc(){
+  var A=num('A'),C=num('C'),D1=num('D1'),D3=num('D3'),D2=num('D2'),E=num('E'),M=num('M'),Fp=num('Fprev');
+  var rolesHtml='';
+  var roleSum=0;
+  for(var i=0;i<ROLES.length;i++){
+    var bn='B'+(i+1);
+    var bv=num(bn);
+    roleSum+=bv*ROLES[i].rate;
+    rolesHtml+=(i>0?' + ':'')+bn+'×'+ROLES[i].rate;
+  }
+  var p1=100-pWarr,p2=100-pRisk,p3=100-pMgmt;
+  var comb=p1*p2*p3/10000;
+  var v1=A,v2=A*p1/100,v3=v2*p2/100,v4=v3*p3/100;
+  var v5=roleSum,v6=C*(Wrate+Orate),v7=D1*D1rate,v8=D3*D3rate,v9=D2*D2rate,v10=E,v11=M;
+  var v12=v5+v6+v7+v8+v9+v10+v11;
+  var Fv=Fp*p1/100*pRisk/100;
+  var v13=Fv;
+  var v14=v13*p3/100;
+  var vf=v4-v12+v14;
+  document.getElementById('fValShow').textContent='上期风险金 F = '+fmt(Fv)+' AED（A上期='+fmt(Fp)+'）';
+  document.getElementById('rolesFormula').textContent=rolesHtml||'B1×120';
+  document.getElementById('fWarr').textContent=p1+'%';
+  document.getElementById('fRisk').textContent=p2+'%';
+  document.getElementById('fMgmt').textContent=p3+'%';
+  document.getElementById('pWarrShow').textContent=pWarr;
+  document.getElementById('pRiskShow').textContent=pRisk;
+  document.getElementById('pMgmtShow').textContent=pMgmt;
+  document.getElementById('fComb').textContent=(comb*100).toFixed(1);
+  document.getElementById('fW').textContent=Wrate;
+  document.getElementById('fO').textContent=Orate;
+  document.getElementById('fW2').textContent=Wrate;
+  document.getElementById('fO2').textContent=Orate;
+  document.getElementById('fD1').textContent=D1rate;
+  document.getElementById('fD3').textContent=D3rate;
+  document.getElementById('fD2').textContent=D2rate;
+  document.getElementById('fWarr3').textContent=p1+'%';
+  document.getElementById('fRisk2').textContent=pRisk+'%';
+  document.getElementById('fMgmt2').textContent=p3+'%';
+  var ids=['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14'];
+  var vals=[v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14];
+  for(var i2=0;i2<ids.length;i2++){var el=document.getElementById(ids[i2]);if(el)el.textContent=fmt(vals[i2])}
+  document.getElementById('finalBill').textContent=fmt(vf);
+  document.getElementById('qFinal').textContent=fmt(vf)+' AED';
+  document.getElementById('qCny').textContent='≈ ¥ '+fmt(vf*fx)+'（按 1 AED = '+fx+' RMB）';
+  var warn=document.getElementById('qWarn');
+  if(vf<0){warn.style.display='block'}else{warn.style.display='none'}
+  document.getElementById('qSteps').innerHTML=
+    'A×'+p1+'% = '+fmt(v2)+'（总包批复，扣'+pWarr+'%质保金）<br>'+
+    '×'+p2+'% = '+fmt(v3)+'（总包当期支付，扣'+pRisk+'%风险金）<br>'+
+    '×'+p3+'% = '+fmt(v4)+'（扣'+pMgmt+'%管理费后到手）<br>'+
+    '− 运营费用 = '+fmt(v12)+'（'+rolesHtml+' + C×('+Wrate+'+'+Orate+') + D1×'+D1rate+'+D3×'+D3rate+'+D2×'+D2rate+'+E+M）<br>'+
+    '+ 上期返还 = '+fmt(v14)+'（F='+fmt(v13)+' × '+p3+'%）<br>'+
+    '<b>= 实际结算款 '+fmt(vf)+' AED</b>';
+  for(var k in MAP){var el2=document.getElementById(MAP[k]);if(el2)el2.value=document.getElementById(k).value}
+  saveState();
+}
+function renderBillInput(){
+  var tb=document.getElementById('billInputTable');
+  if(!tb)return;
+  var html='<table><tr><th style="width:7%">代号</th><th style="width:26%">项目</th><th style="width:8%">单位</th><th style="width:13%">填报值</th><th style="width:13%">核对值</th><th>备注</th></tr>';
+  html+='<tr><td class="code-cell">A</td><td>当月报送审批金额</td><td style="text-align:center">AED</td><td class="input-cell"><input id="A2" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>总包审核通过的量（验收合格、审批通过）</td></tr>';
+  for(var i=0;i<ROLES.length;i++){
+    var bn='B'+(i+1),bid=bn+'2';
+    MAP[bn]=bid;
+    html+='<tr><td class="code-cell" style="color:#2563eb">'+bn+'</td><td>'+ROLES[i].name+'（人数×天数）</td><td style="text-align:center">工日</td><td class="input-cell"><input id="'+bid+'" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>'+ROLES[i].rate+' AED/工日</td></tr>';
+  }
+  html+='<tr><td class="code-cell" style="color:#059669">C</td><td>在场天数（实际当月天数）</td><td style="text-align:center">天</td><td class="input-cell"><input id="C2" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>运营费'+Orate+'/天 + 住宿水电'+Wrate+'/天 = '+(Wrate+Orate)+'/天</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#7c3aed">D1</td><td>早餐人次</td><td style="text-align:center">人次</td><td class="input-cell"><input id="D12" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>'+D1rate+' AED/人次</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#d97706">D3</td><td>午餐人次</td><td style="text-align:center">人次</td><td class="input-cell"><input id="D32" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>'+D3rate+' AED/人次</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#db2777">D2</td><td>晚餐人次</td><td style="text-align:center">人次</td><td class="input-cell"><input id="D22" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>'+D2rate+' AED/人次</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#ea580c">E</td><td>罚款 + 借款代垫</td><td style="text-align:center">AED</td><td class="input-cell"><input id="E2" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>按实际发生</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#64748b">M</td><td>'+Mname+'（每月）</td><td style="text-align:center">AED</td><td class="input-cell"><input id="M2" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>默认 5,000 AED/月，可按实际调整</td></tr>';
+  html+='<tr><td class="code-cell" style="color:#0d9488">F</td><td>上期结算款（算风险金）</td><td style="text-align:center">AED</td><td class="input-cell"><input id="F2" type="number" oninput="syncBack(this.id);calc()"></td><td class="check-cell"></td><td>风险金 F = A<sub>上期</sub> × '+pRisk+'%，返还时扣 '+pMgmt+'%</td></tr>';
+  html+='</table>';
+  tb.innerHTML=html;
+  for(var k in MAP){var el=document.getElementById(MAP[k]);if(el)el.value=document.getElementById(k).value}
+}
+function showView(v){
+  document.getElementById('view-calc').className='view'+(v==='calc'?' active':'');
+  document.getElementById('view-bill').className='view'+(v==='bill'?' active':'');
+  document.getElementById('tab-calc').className='tab'+(v==='calc'?' active':'');
+  document.getElementById('tab-bill').className='tab'+(v==='bill'?' active':'');
+  if(v==='bill')setTimeout(function(){calc();renderBillInput()},0);
+}
+var _st=loadState();
+renderRoles();
+restoreInputs(_st);
+calc();
+</script>
+</body>
+</html>
