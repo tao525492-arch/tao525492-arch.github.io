@@ -429,8 +429,7 @@
     <div class="subtitle">文拓机电公司内部施工月度结算系统</div>
 
     <div class="meta">
-      <span>结算期间：<b>＿＿＿＿年＿＿月</b>（第＿＿期）</span>
-      <span>编号：＿＿＿＿＿＿</span>
+      <span>结算期间：<b id="billPeriod">＿＿＿＿年＿＿月</b>（第<b id="billPeriodNo">＿</b>期）</span>
     </div>
 
     <div class="sec">一、本月核心数字（施工班组填报，现场管理人员核对）</div>
@@ -487,10 +486,14 @@
   <div class="card">
     <h3>📊 经营分析看板（基于月度存档）</h3>
     <div id="chartEmpty" class="hint" style="padding:20px;text-align:center;font-size:13px">
-      📭 还没有足够的月度存档数据。<br>请先在「📊 详细速算表」→「📁 月度存档」保存至少 2 个月的数据，再回来这里查看图表。<br><br>
+      📭 经营分析图表需要至少 <b>2 个月</b> 的存档数据才能生成。<br>
+      <span id="chartEmptyCount" style="display:inline-block;margin-top:6px"></span><br>
+      数据存在<b>本浏览器</b>。如果存档在另一台设备/浏览器，请先用「📥 导入数据」恢复；还没有存档请先保存。<br><br>
       <button class="btn" onclick="showView('calc')">← 去保存数据</button>
+      <button class="btn" style="background:#059669" onclick="document.getElementById('importFile').click()">📥 导入数据</button>
     </div>
     <div id="chartBody" style="display:none">
+      <div id="chartErr" style="display:none;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:8px;padding:10px;font-size:12.5px;margin-bottom:10px"></div>
       <div class="legend" style="margin-bottom:10px">
         <span class="lg"><b style="color:#059669">💰 本期实际结算款</b> 趋势</span>
         <span class="lg"><b style="color:#e11d48">🧾 运营费用</b> 趋势</span>
@@ -706,6 +709,31 @@ function renderBillInput(){
   tb.innerHTML=html;
   for(var k in MAP){var el=document.getElementById(MAP[k]);if(el)el.value=document.getElementById(k).value}
 }
+/* ===== 对账单结算期间：按当前月份/存档自动生成 ===== */
+function updateBillMeta(){
+  var hm=document.getElementById('histMonth');
+  var m=hm&&hm.value?hm.value:new Date().toISOString().slice(0,7);
+  var p=String(m).split('-');
+  if(p.length<2)return;
+  var y=p[0],mo=parseInt(p[1],10);
+  if(isNaN(mo))return;
+  var bm=document.getElementById('billPeriod');
+  if(bm)bm.textContent=y+'年'+mo+'月';
+  var hist=getHistory().slice().sort(function(a,b){return a.month<b.month?-1:1});
+  var no=1;
+  if(hist.length){
+    var idx=-1;
+    for(var i=0;i<hist.length;i++){if(hist[i].month===m){idx=i;break}}
+    if(idx>=0){no=idx+1}
+    else{
+      var e0=String(hist[0].month).split('-');
+      var diff=(parseInt(y,10)-parseInt(e0[0],10))*12+(mo-parseInt(e0[1],10));
+      no=Math.max(1,diff+1);
+    }
+  }
+  var bn=document.getElementById('billPeriodNo');
+  if(bn)bn.textContent=no;
+}
 function showView(v){
   document.getElementById('view-calc').className='view'+(v==='calc'?' active':'');
   document.getElementById('view-bill').className='view'+(v==='bill'?' active':'');
@@ -713,7 +741,7 @@ function showView(v){
   document.getElementById('tab-calc').className='tab'+(v==='calc'?' active':'');
   document.getElementById('tab-bill').className='tab'+(v==='bill'?' active':'');
   document.getElementById('tab-chart').className='tab'+(v==='chart'?' active':'');
-  if(v==='bill')setTimeout(function(){calc();renderBillInput()},0);
+  if(v==='bill')setTimeout(function(){calc();renderBillInput();updateBillMeta()},0);
   if(v==='chart')setTimeout(buildCharts,50);
 }
 /* ===== 经营分析 ===== */
@@ -791,6 +819,7 @@ function drawLine(elId,rows,getVal,color,label){
   box.innerHTML='';
   if(!rows.length)return;
   var svg=svgEl('svg',{width:'100%',height:h,viewBox:'0 0 '+w+' '+h});
+  var n=rows.length;
   var vals=rows.map(getVal);
   var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
   if(min>0)min=0;
@@ -860,7 +889,10 @@ function drawPie(elId,rows,getVal,colors,label){
   ctot.textContent=fmtShort(total);
   svg.appendChild(ctot);
   box.appendChild(svg);
+  var oldLg=document.getElementById('lg-'+elId);
+  if(oldLg&&oldLg.parentNode)oldLg.parentNode.removeChild(oldLg);
   var lg=document.createElement('div');
+  lg.id='lg-'+elId;
   lg.style.cssText='display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;margin-top:4px;font-size:11.5px';
   for(var li=0;li<rows.length;li++){
     var v=getVal(rows[li]);if(v<=0)continue;
@@ -871,10 +903,19 @@ function drawPie(elId,rows,getVal,colors,label){
   box.parentNode.insertBefore(lg,box.nextSibling);
 }
 function buildCharts(){
+  try{
   var rows=analyzeData();
   var empty=document.getElementById('chartEmpty'),body=document.getElementById('chartBody');
-  if(rows.length<2){if(empty)empty.style.display='block';if(body)body.style.display='none';return}
-  if(empty)empty.style.display='none';
+  if(rows.length<2){
+    if(empty){
+      empty.style.display='block';
+      var cnt=document.getElementById('chartEmptyCount');
+      if(cnt)cnt.textContent='本浏览器当前存档：'+rows.length+' 个月'+(rows.length?('（'+rows.map(function(r){return fmtMonth(r.month)}).join('、')+'）'):'，请先保存数据或导入数据文件');
+    }
+    if(body)body.style.display='none';
+    return
+  }
+  if(empty){empty.style.display='none';var cnt2=document.getElementById('chartEmptyCount');if(cnt2)cnt2.textContent=''}
   if(body)body.style.display='block';
   var colors=['#059669','#e11d48','#2563eb','#d97706','#7c3aed','#0d9488','#db2777'];
   drawLine('chartTrend',rows,function(r){return r.final},'#059669','💰 实际结算款');
@@ -916,6 +957,12 @@ function buildCharts(){
     qHtml+='</div></div>';
     q.innerHTML=qHtml;
   }
+  }catch(e){
+    var err=document.getElementById('chartErr');
+    if(err){err.style.display='block';err.textContent='❌ 图表生成出错：'+e.message+'（请截图反馈，便于修复）'}
+    var body2=document.getElementById('chartBody');if(body2)body2.style.display='block';
+    var empty2=document.getElementById('chartEmpty');if(empty2)empty2.style.display='none';
+  }
 }
 /* ===== 月度存档 ===== */
 var HIST_KEY='wento_history_v1';
@@ -949,6 +996,7 @@ function saveHistory(){
   hist.sort(function(a,b){return a.month<b.month?-1:1});
   putHistory(hist);
   renderHistory();
+  updateBillMeta();
   var tip=document.getElementById('histTip');
   if(tip)tip.textContent='✅ 已保存 '+fmtMonth(month)+'（'+rec.savedAt+'）';
 }
@@ -963,7 +1011,7 @@ function loadHistory(month){
   renderRoles();
   restoreInputs(rec);
   var hm=document.getElementById('histMonth');if(hm)hm.value=month;
-  calc();saveState();renderHistory();
+  calc();saveState();renderHistory();updateBillMeta();
   var tip=document.getElementById('histTip');
   if(tip)tip.textContent='📂 已载入 '+fmtMonth(month)+' 的数据';
 }
@@ -1098,6 +1146,7 @@ renderRoles();
 restoreInputs(_st);
 calc();
 renderHistory();
+updateBillMeta();
 loadEmbeddedOnce(_st);
 </script>
 </body>
