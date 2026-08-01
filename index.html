@@ -1157,8 +1157,15 @@ function embedDataToHTML(){
   var json=JSON.stringify(st).replace(/<\//g,'<\\/');
   try{
     var src=document.documentElement.outerHTML;
-    src=src.replace(/<script id="embedded-data"[\s\S]*?<\/script>/gi,'');
-    src=src.replace('</body>','<script id="embedded-data" type="application/json">'+json+'</'+'script></body>');
+    var keyStart='<script id="embedded-data"'+' type="application/json">';
+    var si=src.indexOf(keyStart);
+    if(si>=0){var se=src.indexOf('</'+'script>',si);if(se>=0){src=src.slice(0,si)+src.slice(se+9)}}
+    var bs='</'+'body>', hs='</'+'html>';
+    var ib=src.indexOf(bs), ih=src.indexOf(hs);
+    if(ih<0){ih=src.length}
+    var insertAt=(ib>=0&&ib<ih)?ib:ih;
+    var tag='<script id="embedded-data"'+' type="application/json">'+json+'</'+'script>';
+    src=src.slice(0,insertAt)+tag+src.slice(insertAt);
     var blob=new Blob([src],{type:'text/html;charset=utf-8'});
     var a=document.createElement('a');
     var d=new Date(),mm=('0'+(d.getMonth()+1)).slice(-2),dd=('0'+d.getDate()).slice(-2);
