@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>文拓机电 · 施工月度结算系统</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}
@@ -170,7 +173,7 @@
     .example-table tr{display:block;width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin-bottom:8px}
     .example-table td{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:3px 0;border:none;text-align:right;line-height:1.5}
     .example-table td:nth-child(1){display:block;font-weight:800;color:#0f766e;font-size:12.5px;text-align:left;padding-bottom:2px;overflow-wrap:break-word}
-    .example-table td:nth-child(2){flex:1;min-width:0;word-break:normal;overflow-wrap:break-word;font-size:12px}
+    .example-table td:nth-child(2){flex:1;min-width:0;word-break:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.7}
     .example-table td:nth-child(2)::before{content:"怎么算";font-weight:800;color:#64748b;font-size:10.5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
     .example-table td:nth-child(3){font-size:12.5px;font-weight:800;white-space:nowrap;flex-shrink:0}
     .example-table td:nth-child(3)::before{content:"金额";font-weight:800;color:#64748b;font-size:10.5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
@@ -357,7 +360,7 @@
       <tr><td>② 总包批复（扣 10% 质保金）</td><td class="calc-amt">= ① × 90%</td><td class="calc-amt">90,000</td></tr>
       <tr><td>③ 总包当期支付（扣 20% 风险金）</td><td class="calc-amt">= ② × 80%</td><td class="calc-amt">72,000</td></tr>
       <tr><td>④ 扣 15% 管理费后到手</td><td class="calc-amt">= ③ × 85%</td><td class="calc-amt">61,200</td></tr>
-      <tr><td>⑤ 运营费用合计（B×120+C×(90+410)+D1×10+D3×20+D2×20+E+M）</td><td class="calc-amt">15×120+15×200+30×(90+410)+50×10+50×20+50×20+1250+5000</td><td class="calc-amt">28,550</td></tr>
+      <tr><td>⑤ 运营费用合计（B×120+C×(90+410)+D1×10+D3×20+D2×20+E+M）</td><td class="calc-amt">15×120<wbr>+15×200<wbr>+30×(90+410)<wbr>+50×10<wbr>+50×20<wbr>+50×20<wbr>+1250<wbr>+5000</td><td class="calc-amt">28,550</td></tr>
       <tr><td>⑥ 上期风险金返还（F×85%，F=A<sub>上期</sub>×90%×20%）</td><td class="calc-amt">= F × 85%</td><td class="calc-amt">15,300</td></tr>
       <tr class="final-row"><td colspan="2" class="final-label">💰 本期实际结算款</td><td class="final-amt">47,950</td></tr>
     </table>
