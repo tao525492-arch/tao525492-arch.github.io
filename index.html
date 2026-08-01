@@ -97,6 +97,84 @@
   .role-del{background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;width:26px;height:26px;cursor:pointer;font-weight:900}
   .add-role{background:#0f766e;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;margin-top:8px}
   .add-role:hover{background:#0d9488}
+  @media (max-width:640px){
+    .topbar{padding:10px 12px}
+    .top-title{font-size:15px}
+    .top-sub{font-size:10px}
+    .tabs{width:100%;display:flex}
+    .tab{flex:1;padding:9px 6px;font-size:13px;text-align:center;border-radius:8px}
+    .wrap{padding:14px 10px 50px}
+    .card{padding:14px 12px;border-radius:12px;margin-bottom:12px}
+    .card h3{font-size:15px}
+    .logic-strip{padding:13px 14px;border-radius:12px}
+    .logic-strip .t1{font-size:14px}
+    .logic-strip .t2{font-size:12px}
+    .num-grid{grid-template-columns:repeat(2,1fr);gap:9px}
+    .num-card{padding:11px;border-radius:12px}
+    .num-card .code{font-size:23px}
+    .num-card .name{font-size:12px}
+    .num-card .rate{font-size:10px}
+    .num-card input{padding:8px 6px;font-size:15px}
+    .formula-box{padding:12px 10px}
+    .formula-line{font-size:13px;line-height:1.9}
+    .big{font-size:16px}
+    .big-f{font-size:18px}
+    .note-sm{font-size:10.5px}
+    .legend{padding:8px 10px;gap:5px 12px}
+    .legend .lg{font-size:11.5px}
+    .legend .lg b{font-size:13px}
+    table{font-size:11.5px}
+    th{font-size:11px;padding:5px 4px}
+    td{padding:4px 5px;line-height:1.45}
+    .calc-amt{font-size:11.5px}
+    .final-label{font-size:14px}
+    .final-amt{font-size:18px}
+    .result-box{padding:13px 14px}
+    .result-main{font-size:21px}
+    .result-steps{font-size:11px}
+    .btn{padding:11px 18px;font-size:14px}
+    .btn.big-btn{font-size:15px;padding:13px 20px}
+    .toolbar{gap:8px;margin-bottom:10px}
+    .hint{font-size:12px}
+    .sheet{padding:14px 10px;border-radius:10px}
+    .title{font-size:18px}
+    .subtitle{font-size:11px}
+    .meta{flex-direction:column;gap:6px;font-size:12px;padding-bottom:8px}
+    .sec{font-size:13px;padding:6px 10px;margin:12px 0 6px}
+    .input-cell input{font-size:14px;padding:4px 4px}
+    .check-cell{width:56px}
+    .code-cell{font-size:12.5px}
+    .sign{flex-direction:column;align-items:flex-start;gap:10px;padding:10px}
+    .sign-item{font-size:12.5px}
+    .line{width:70px}
+    .line-short{width:44px}
+    .remark{font-size:11px}
+    .flow-step{min-width:100%}
+    details.cfg{padding:12px 12px;border-radius:12px}
+    summary{font-size:14px}
+    .cfg-grid{grid-template-columns:1fr;gap:10px}
+    .cfg-sec{padding:10px}
+    .cfg-sec .cfg-title{font-size:12px}
+    .cfg-sec .cfg-row{font-size:12px}
+    .cfg-sec input{width:64px;font-size:13px;padding:4px}
+    .cfg-sec .in-name{width:100px}
+    .cfg table{font-size:11.5px}
+    .cfg table th{font-size:11px;padding:5px}
+    .cfg table td{padding:4px}
+    .role-del{width:24px;height:24px}
+    .add-role{padding:6px 12px;font-size:12px}
+  }
+  @media (max-width:380px){
+    .top-title{font-size:14px}
+    .top-sub{font-size:9.5px}
+    .num-card .code{font-size:21px}
+    .formula-line{font-size:12.5px}
+    .big{font-size:15px}
+    table{font-size:11px}
+    th{font-size:10.5px}
+    .calc-amt{font-size:11px}
+    .title{font-size:16px}
+  }
   @media print{
     body{background:#fff}
     .topbar{display:none !important}
@@ -245,7 +323,7 @@
     </div>
     <div class="formula-box">
       <div class="formula-line"><span class="step">第1步</span><span class="big cA">A</span> × <span id="fWarr">90</span>% <span class="note-sm">（总包先扣 <span id="pWarrShow">10</span>% 质保金）</span> → × <span id="fRisk">80</span>% <span class="note-sm">（总包再扣 <span id="pRiskShow">20</span>% 风险金）</span> → × <span id="fMgmt">85</span>% <span class="note-sm">（公司扣 <span id="pMgmtShow">15</span>% 管理费）</span> = <span class="big cA">A</span> × <span id="fComb">61.2</span>% = <b>本月产值到手</b></div>
-      <div class="formula-line"><span class="step">第2步</span><span class="big cB" id="rolesFormula">B1×120 + B2×120</span> + <span class="big cC">C</span>×(<span id="fW">90</span>+<span id="fO">410</span>) <span class="note-sm">（住宿水电 <span id="fW2">90</span> + 运营费 <span id="fO2">410</span>）/天</span> + <span class="big cD1">D1</span>×<span id="fD1">10</span> + <span class="big cD3">D3</span>×<span id="fD3">20</span> + <span class="big cD2">D2</span>×<span id="fD2">20</span> + <span class="big cE">E</span> + <span class="big cM">M</span> = <b>运营费用合计</b></div>
+      <div class="formula-line"><span class="step">第2步</span><span class="big cB" id="rolesFormula">B1×120 + B2×200</span> + <span class="big cC">C</span>×(<span id="fW">90</span>+<span id="fO">410</span>) <span class="note-sm">（住宿水电 <span id="fW2">90</span> + 运营费 <span id="fO2">410</span>）/天</span> + <span class="big cD1">D1</span>×<span id="fD1">10</span> + <span class="big cD3">D3</span>×<span id="fD3">20</span> + <span class="big cD2">D2</span>×<span id="fD2">20</span> + <span class="big cE">E</span> + <span class="big cM">M</span> = <b>运营费用合计</b></div>
       <div class="formula-line"><span class="step">第3步</span>A<sub>上期</sub> × <span id="fWarr3">90</span>% × <span id="fRisk2">20</span>% = <span class="big cF">F</span>（结算循环风险金，上期结算款被总包扣的风险金）→ × <span id="fMgmt2">85</span>% <span class="note-sm">（返还时扣 15% 管理费）</span> = <b>上期返还</b></div>
       <div class="formula-line" style="margin-top:10px;border-top:2px dashed #0f766e;padding-top:10px">💰 <span class="big-f">实际结算款 = 第1步 − 第2步 + 第3步</span></div>
     </div>
