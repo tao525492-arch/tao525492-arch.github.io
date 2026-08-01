@@ -163,6 +163,22 @@
     .cfg table td{padding:4px}
     .role-del{width:24px;height:24px}
     .add-role{padding:6px 12px;font-size:12px}
+    /* 举例表：移动端卡片式堆叠，避免一字一行 */
+    .example-table{display:block;width:100%}
+    .example-table thead{display:none}
+    .example-table tbody{display:block;width:100%}
+    .example-table tr{display:block;width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin-bottom:8px}
+    .example-table td{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:3px 0;border:none;text-align:right;line-height:1.5}
+    .example-table td:nth-child(1){display:block;font-weight:800;color:#0f766e;font-size:12.5px;text-align:left;padding-bottom:2px;overflow-wrap:break-word}
+    .example-table td:nth-child(2){flex:1;min-width:0;word-break:normal;overflow-wrap:break-word;font-size:12px}
+    .example-table td:nth-child(2)::before{content:"怎么算";font-weight:800;color:#64748b;font-size:10.5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+    .example-table td:nth-child(3){font-size:12.5px;font-weight:800;white-space:nowrap;flex-shrink:0}
+    .example-table td:nth-child(3)::before{content:"金额";font-weight:800;color:#64748b;font-size:10.5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+    .example-table tr.final-row{background:linear-gradient(135deg,#0f766e,#0d9488);border-color:transparent}
+    .example-table tr.final-row td{color:#fff;border:none}
+    .example-table tr.final-row td::before{content:"" !important}
+    .example-table tr.final-row td:nth-child(1){color:#fff;font-weight:900;font-size:13.5px}
+    .example-table tr.final-row td:nth-child(2){font-size:16px;font-weight:900;white-space:nowrap}
   }
   @media (max-width:380px){
     .top-title{font-size:14px}
@@ -173,6 +189,9 @@
     table{font-size:11px}
     th{font-size:10.5px}
     .calc-amt{font-size:11px}
+    .example-table tr{padding:6px 8px}
+    .example-table td:nth-child(1){font-size:12px}
+    .example-table td:nth-child(2){font-size:11px}
     .title{font-size:16px}
   }
   @media print{
@@ -332,7 +351,7 @@
 
   <div class="card">
     <h3>🧮 举例：本月干 100,000 AED 的活（一目了然）</h3>
-    <table>
+    <table class="example-table">
       <tr><th>步骤</th><th>怎么算</th><th>金额（AED）</th></tr>
       <tr><td>① 当月报送审批金额</td><td class="calc-amt">= A</td><td class="calc-amt">100,000</td></tr>
       <tr><td>② 总包批复（扣 10% 质保金）</td><td class="calc-amt">= ① × 90%</td><td class="calc-amt">90,000</td></tr>
